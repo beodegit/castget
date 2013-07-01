@@ -62,6 +62,17 @@ add or overwrite the `year' (TYER) ID3v2 tag in enclosures that support this.
 .TP
 \fBid3comment\fR
 add or overwrite the `comment' (COMM) ID3v2 tag in enclosures that support this.
+.TP
+\fBfilespec\fR
+use the specified filename for saving enclosures instead of a filename generated from the URL of the enclosure. The filename can contain patterns on the form %(parameter), which are expanded for each enclosure. Supported patterns are listed below.
+.SH FILENAME PATTERNS
+The following filename patterns are supported:
+.TP
+\fB%(date)\fR
+The publication date of the enclosure as given in the RSS entry.
+.TP
+\fB%(title)\fR
+The title of the enclosure as given in the RSS entry.
 .SH GLOBAL CONFIGURATION
 A channel definition with the channel identifier `*' will define a global configuration affecting all channels. The global configuration
 .PP

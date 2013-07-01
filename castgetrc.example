@@ -9,7 +9,7 @@
 #
 
 # This will set the ID3 tag "content type" to "Podcast"
-# and use the directory /home/tom/podcasts for downloading 
+# and use the directory /home/tom/podcasts for downloading
 # enclosures.
 [*]
 id3contenttype=Podcast
@@ -19,7 +19,7 @@ spool=/home/tom/podcasts
 # Per-channel settings.
 #
 
-# This will define a channel with the identifier "dsc", set the RSS 
+# This will define a channel with the identifier "dsc", set the RSS
 # feed URL for the channel, override the download directory defined
 # in the global settings section, and append file names of downloaded
 # enclosures to /home/tom/podcasts.m3u.
@@ -38,3 +38,12 @@ id3comment=
 id3title=Yeast Radio
 id3year=2005
 
+# This will set the filename of saved enclosures using a pattern that may
+# include the date and title of the enclosure as given in the RSS feed.  This
+# is particularly useful with RSS feeds in which the enclosures have messy
+# URLs.
+[scientific_american]
+url=http://rss.sciam.com/sciam/science-talk
+spool=/home/tony/podcasts/sa
+id3album=Scientific American
+filespec=%(date)-%(title).mp3

@@ -31,6 +31,7 @@ typedef struct _channel {
   gchar *url;
   gchar *channel_filename;
   gchar *spool_directory;
+  gchar *filename_pattern;
   GHashTable *downloaded_enclosures;
   gchar *rss_last_fetched;
 } channel;
@@ -60,8 +61,11 @@ typedef void (*channel_callback)(void *user_data,
                                  enclosure *enclosure,
                                  const char *filename);
 
-channel *channel_new(const char *url, const char *channel_file,
-                     const char *spool_directory, int resume);
+channel *channel_new(const char *url,
+                     const char *channel_file,
+                     const char *spool_directory,
+                     const char *filename_pattern,
+                     int resume);
 void channel_free(channel *c);
 int channel_update(channel *c, void *user_data, channel_callback cb, int no_download,
                    int no_mark_read, int first_only, int resume,
