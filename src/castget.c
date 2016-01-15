@@ -450,7 +450,8 @@ static int _process_channel(const gchar *channel_directory, GKeyFile *kf, const 
   }
 
   c = channel_new(channel_configuration->url, channel_file, 
-                  channel_configuration->spool_directory, resume);
+                  channel_configuration->spool_directory,
+                  channel_configuration->user_filename_spec, resume);
   g_free(channel_file);
 
   if (!c) {

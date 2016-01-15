@@ -62,6 +62,9 @@ add or overwrite the `year' (TYER) ID3v2 tag in enclosures that support this.
 .TP
 \fBid3comment\fR
 add or overwrite the `comment' (COMM) ID3v2 tag in enclosures that support this.
+.TP
+\fBfilespec\fR
+use a user specified name to save enclosure with instead of the original enclosure name. 2 dynamic variables can be used: %(date) and %(title), which are replaced with the publication date and the title of the RSS entry including the enclosure.
 .SH GLOBAL CONFIGURATION
 A channel definition with the channel identifier `*' will define a global configuration affecting all channels. The global configuration
 .PP

@@ -38,3 +38,17 @@ id3comment=
 id3title=Yeast Radio
 id3year=2005
 
+# One of my podcast subscriptions uses enclosures of the form:
+#
+# url="http://www.pheedo.com/e/088e77a6eeb28f48873f663cdcca92a6/podcast.mp3?e_id=B4878618-D783-F0EC-4DB17B3507BF4B1C&amp;ref=p_itune"
+#
+# When castget tries to determine the name of the .mp3 file it ends up with a bit of a mess.
+# So I added support to 1.0.1 for user naming of the .mp3 file via an entry in the .castgetrc file. 
+#
+# I only supported the %(date) and %(title) fields, but others could be added.
+#
+[ScientificAmerican]
+url=http://rss.sciam.com/sciam/science-talk
+spool=/home/tony/podcasts/ScientificAmerican
+id3album=ScientificAmerican
+filespec=%(date)-%(title).mp3 

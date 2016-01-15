@@ -26,6 +26,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
+#include <stdio.h>
+#include <ctype.h>
 #include <glib/gprintf.h>
 #include <glib/gstdio.h>
 #include "utils.h"
@@ -117,6 +120,55 @@ gchar *get_rfc822_time(void)
   else
     return NULL;
 }
+
+static const char *dayStr[7] = { "Sun","Mon","Tue","Wed","Thu","Fri","Sat" };
+static const char *monthStr[12] = { "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
+
+GDate* libcastget_parse_rfc822_date(const char *rfc822_date_str)
+{
+   GDate* rfc822_date = g_date_new(); /* Create invalid date */
+   const char* dstr = rfc822_date_str;
+   int i = 0;
+
+   while (isspace(*dstr)) dstr++;
+   if (*dstr == '\0') return rfc822_date;
+
+   /* Skip past any valid day, field */
+   for (i=0; i < sizeof(dayStr)/sizeof(dayStr[0]); i++) {
+     if (strncmp(dstr, dayStr[i], 3) == 0)
+       break;
+   }
+   if (i < sizeof(dayStr)/sizeof(dayStr[0])) {
+     dstr += 3;
+     while (isspace(*dstr)) dstr++;
+     if (*dstr == '\0') return rfc822_date;
+     if (*dstr == ',') dstr++;
+     while (isspace(*dstr)) dstr++;
+     if (*dstr == '\0') return rfc822_date;
+   }
+   /* Decode day, month, year */
+   int day;
+   int month;
+   int year;
+   char mStr[20];
+   if (sscanf(dstr, "%d %s %d", &day, mStr, &year) != 3)
+     return rfc822_date;
+   for (i=0; i < sizeof(monthStr)/sizeof(monthStr[0]); i++) {
+     if (strncmp(mStr, monthStr[i], 3) == 0)
+       break;
+  }
+   if (i == sizeof(monthStr)/sizeof(monthStr[0])) return rfc822_date;
+   month = i+1;
+   if (year < 1900) {
+     if (year < 50)
+       year += 2000;
+     else
+       year += 1900;
+   }
+   g_date_set_dmy(rfc822_date, day, month, year);
+   return rfc822_date;
+ }
+
 
 /* 
    Local Variables:

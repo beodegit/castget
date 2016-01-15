@@ -20,7 +20,7 @@
 #
 
 AC_PREREQ(2.59)
-AC_INIT(castget, 1.1.0, mariuslj@ifi.uio.no)
+AC_INIT(castget, 1.1.1, mariuslj@ifi.uio.no)
 AM_INIT_AUTOMAKE([1.8 dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([src/castget.c])
 AC_CONFIG_HEADER([config.h])

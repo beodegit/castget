@@ -31,6 +31,8 @@ int write_by_temporary_file(const gchar *filename,
                             **used_filename);
 gchar *get_rfc822_time(void);
 
+GDate* libcastget_parse_rfc822_date(const char *rfc822_date_str);
+
 #endif /* UTILS_H */
 
 /* 

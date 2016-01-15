@@ -1,6 +1,7 @@
 /*
   Copyright (C) 2005, 2007 Marius L. Jøhndal
  
+ 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -28,6 +29,7 @@ typedef struct _rss_item {
   char *title;
   char *link;
   char *description;
+  char *pub_date;
   enclosure *enclosure;
 } rss_item;
 

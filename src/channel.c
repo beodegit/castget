@@ -1,5 +1,6 @@
 /*
   Copyright (C) 2005, 2006, 2007 Marius L. Jøhndal
+  Copyright (C) 2010 Tony Armistead
  
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -55,8 +56,12 @@ static void _enclosure_iterator(const void *user_data, int i, const xmlNode *nod
                       (gpointer)downloadtime);
 }
 
-channel *channel_new(const char *url, const char *channel_file, 
-                     const char *spool_directory, int resume)
+channel *channel_new(
+		     const char *url, 
+		     const char *channel_file, 
+                     const char *spool_directory, 
+                     const char *user_filename_spec, 
+		     int resume)
 {
   channel *c;
   xmlDocPtr doc;
@@ -67,6 +72,7 @@ channel *channel_new(const char *url, const char *channel_file,
   c->url = g_strdup(url);
   c->channel_filename = g_strdup(channel_file);
   c->spool_directory = g_strdup(spool_directory);
+  c->user_filename_spec = g_strdup(user_filename_spec);
   //  c->resume = resume;
   c->rss_last_fetched = NULL;
   c->downloaded_enclosures = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, g_free);
@@ -175,6 +181,129 @@ static rss_file *_get_rss(channel *c, void *user_data, channel_callback cb)
   return f;
 }
 
+
+/*!
+ * Returns a string with all characters removed which may cause problems if
+ * included as part of a filename.
+ * @param filename the input filename
+ * @return a gchar* string which is the input string with risky chars removed.
+ *         This string should be freed with g_free().
+ */
+static gchar* remove_bad_filename_chars(const char* filename)
+{
+  static const gchar* bad_filename_chars = "/\\?%*:|\"<>.,'";
+  gchar** parts = g_strsplit_set(filename,  bad_filename_chars, -1);
+  gchar* good_filename = g_strjoinv(NULL, parts);
+  g_strfreev(parts);
+  return good_filename;
+}
+
+/*!
+ * Forms the field string for one of the know field names. Supported field names
+ * are:
+ *  	date 	- returns the publication date or the current date if no publication
+ *  		  date was included in the rss entry
+ *  	title	- the episode title which has been modified to remove any chars
+ *  		  which could cause problems if used as part of a filename
+ *  If an unknown field name is specified it is mapped to a single '_' character.
+ *  @param item the episode rss info
+ *  @param field_name one of the supported field names
+ */
+static gchar* form_field_string(
+                                rss_item *item,
+                                const gchar* field_name
+                                )
+{
+  if (g_ascii_strcasecmp("date", field_name) == 0) {
+    gchar str_date[20];
+    /* Try to get date from RSS feed pubDate entry */
+    GDate* rfc822_date = libcastget_parse_rfc822_date(item->pub_date);
+    if (!g_date_valid(rfc822_date)) {
+      /* If that date is bad or missing use current date */
+      GTimeVal today;
+      g_get_current_time(&today);
+      g_date_set_time_val(rfc822_date, &today);
+    }
+    g_date_strftime(str_date, sizeof(str_date), "%d-%m-%y", rfc822_date);
+    g_date_free(rfc822_date);
+    return g_strdup(str_date);
+  }
+  else if (g_ascii_strcasecmp("title", field_name) == 0) {
+    return remove_bad_filename_chars(item->title);
+  }
+  /* Unknown field string so just use an '_' */
+  return g_strnfill(1, '_');
+}
+
+/*!
+ * Forms a user specified filename for an rss episode.
+ * @param directory the directory path for the filename
+ * @param user_file_spec the pattern string which specifies how we construct
+ * 	  the filename part
+ * @param item the rss episode info
+ */
+
+#define DIM(a) sizeof(a)/sizeof(a[0])
+
+static gchar* form_userspec_filename(
+                                     const gchar* directory,
+                                     const gchar* user_file_spec,
+                                     rss_item *item
+                                     )
+{
+  enum {STATE_COPY, STATE_FIELD, STATE_DONE } state = STATE_COPY;
+  gchar* filename_parts[20];
+  int part = 0;
+  gchar fieldname[80];
+  int fieldname_idx = 0;
+  gchar* processed_filename = NULL;
+  const gchar* cp_start = user_file_spec;
+  const gchar* cp_end = user_file_spec;
+  while (state != STATE_DONE) {
+    switch (state) {
+    case STATE_COPY:
+      /* Process */
+      if (*cp_end == '\0' || *cp_end == '%') {
+        if (cp_end > cp_start)
+          filename_parts[part++] = g_strndup(cp_start, cp_end-cp_start);
+      }
+      /* State update */
+      if (*cp_end == '%') {
+        state = STATE_FIELD;
+        fieldname_idx = 0;
+      }
+      if (*cp_end == '\0')
+        state = STATE_DONE;
+      break;
+    case STATE_FIELD:
+      /* Process */
+      if (*cp_end == '\0' || *cp_end == ')') {
+        fieldname[fieldname_idx] = '\0';
+        if (part < DIM(filename_parts)-1)
+          filename_parts[part++] = form_field_string(item, fieldname);
+      }
+      else if ((*cp_end != '(') && (fieldname_idx < DIM(fieldname)-1))
+        fieldname[fieldname_idx++] = *cp_end;
+      /* State update */
+      if (*cp_end == '\0')
+        state = STATE_DONE;
+      else if (*cp_end == ')') {
+        state = STATE_COPY;
+        cp_start = cp_end + 1;
+      }
+      break;
+    case STATE_DONE:
+      break;
+    }
+    ++cp_end;
+  }
+  filename_parts[part] = NULL;
+  processed_filename = g_strjoinv(NULL, filename_parts);
+  while (part--) g_free(filename_parts[part]);
+  return g_build_filename(directory, processed_filename, NULL);
+}
+
+
 static int _do_download(channel *c, channel_info *channel_info, rss_item *item, 
                         void *user_data, channel_callback cb, int resume)
 {
@@ -191,6 +320,13 @@ static int _do_download(channel *c, channel_info *channel_info, rss_item *item,
   }
 
   /* Build enclosure file name and open file. */
+  
+  /* If we have a user filename spec ... */
+  if (c->user_filename_spec)
+    /* ... we use it to construct the filename */
+    enclosure_full_filename = form_userspec_filename(c->spool_directory, c->user_filename_spec, item);
+  else
+    /* ... otherwise we user the filename we derived from the download url */
   enclosure_full_filename = g_build_filename(c->spool_directory, item->enclosure->filename, NULL);
 
   if (resume) {
@@ -209,9 +345,8 @@ static int _do_download(channel *c, channel_info *channel_info, rss_item *item,
   enclosure_file = fopen(enclosure_full_filename, resume_from ? "ab" : "wb");
 
   if (!enclosure_file) {
-    g_free(enclosure_full_filename);
-    
     g_fprintf(stderr, "Error opening enclosure file %s.\n", enclosure_full_filename);
+    g_free(enclosure_full_filename);
     return 1;
   }
   
