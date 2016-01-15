@@ -72,6 +72,9 @@ options as arguments.
   * `-C` <filename>, `--rcfile`=<filename>:
     override the default filename for the configuration file
 
+  * `-D` <directory>, `--channeldir`=<directory>:
+    override the default directory where channel xml files are stored
+
 ## EXAMPLES
 
   * Download all enclosures not already downloaded:

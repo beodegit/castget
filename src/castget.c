@@ -72,6 +72,7 @@ static gboolean new_only = FALSE;
 static gboolean list = FALSE;
 static gboolean catchup = FALSE;
 static gchar *rcfile = NULL;
+static gchar *channeldir = NULL;
 static gchar *filter_regex = NULL;
 
 int main(int argc, char **argv)
@@ -80,7 +81,6 @@ int main(int argc, char **argv)
   int i, len;
   int ret = 0;
   gchar **groups;
-  gchar *channeldir;
   GKeyFile *kf;
   struct channel_configuration *defaults;
   enclosure_filter *filter = NULL;
@@ -95,6 +95,7 @@ int main(int argc, char **argv)
 
     {"resume",       'r', 0, G_OPTION_ARG_NONE,     &resume,            "resume aborted downloads"},
     {"rcfile",       'C', 0, G_OPTION_ARG_FILENAME, &rcfile,            "override the default configuration file name"},
+    {"channeldir",   'D', 0, G_OPTION_ARG_FILENAME, &channeldir,        "override the default directory where channel xml files are stored"},
 
     {"debug",        'd', 0, G_OPTION_ARG_NONE,     &show_debug_info,   "print connection debug information"},
     {"verbose",      'v', 0, G_OPTION_ARG_NONE,     &verbose,           "print detailed progress information"},
@@ -157,12 +158,15 @@ int main(int argc, char **argv)
   LIBXML_TEST_VERSION;
 
   /* Build the channel directory path and ensure that it exists. */
-  channeldir = g_build_filename(g_get_home_dir(), ".castget", NULL);
+  if (!channeldir){
+      /* set default directory */
+      channeldir = g_build_filename(g_get_home_dir(), ".castget", NULL);
 
-  if (!g_file_test(channeldir, G_FILE_TEST_IS_DIR)) {
-    if (g_mkdir(channeldir, 0755) < 0) {
-      perror("Error creating channel directory");
-      return 1;
+      if (!g_file_test(channeldir, G_FILE_TEST_IS_DIR)) {
+        if (g_mkdir(channeldir, 0755) < 0) {
+          perror("Error creating channel directory");
+          return 1;
+        }
     }
   }
 

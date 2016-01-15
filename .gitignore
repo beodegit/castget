@@ -21,3 +21,4 @@ src/.deps
 src/.libs
 src/*.o
 src/castget
+*~
